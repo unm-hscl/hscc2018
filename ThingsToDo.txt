@@ -1,0 +1,4 @@
+Cleanup file names with DI in mind
+Cleanup variable names with DI in mind
+Cleanup params_CWH
+Write code for Figure5,6 
