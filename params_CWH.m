@@ -1,32 +1,28 @@
-%% Load the solution and the safe, target sets from CDC 2017 work
-load('cwh_save.mat','DsetTemp');
-
 %% Problem parameters
 % 4D plot params
 time_horizon=5;
 mean_vector=zeros(4,1);
 sigma_matrix = diag([1e-4, 1e-4, 5e-8, 5e-8]);    % sigma^2 values
 
-%%% CDC 2013
-%%% Restricted to left half
-%slice_at_vx_vy = [0.01, 0.01];
-%initial_guess_for_xmax=[-0.9;-1;0;0];%[-0.8261;-0.9645;0;0];%
-%% % Restricted to right half
-%% slice_at_vx_vy = [-0.01, 0.01];
-%% initial_guess_for_xmax=[0.9;-1;0;0]; %[0.8261;-0.9645;0;0];
-%no_of_direction_vectors = 10;
-%direction_angles = linspace(-pi,pi/2, no_of_direction_vectors);
-%LagrangianSolution = Polyhedron.emptySet(2);
-%label_cells={'Safe Set','Target Set','Algorithm 1'};
-%umax=0.01;
-%% CDC 2017
-slice_at_vx_vy = [0.0, 0.0];
-initial_guess_for_xmax=zeros(4,1);
-no_of_direction_vectors = 10;
-direction_angles = [linspace(-3*pi/4-pi/20,-pi/4+pi/20, no_of_direction_vectors-1),pi/2];
-LagrangianSolution = DsetTemp.slice([3,4], slice_at_vx_vy);
-label_cells={'Safe Set','Target Set','Lagrangian','Algorithm 1'};
-umax=0.1;
+disp('Generate Figure 5/6 and report their computation times');
+code_flow_flag = input('1-Generate Figure 5 | 2-Generate Figure 6\n');
+if code_flow_flag == 1
+    %% CDC 2017
+    slice_at_vx_vy = [0.0, 0.0];
+    initial_guess_for_xmax=zeros(4,1);
+    no_of_direction_vectors = 10;
+    direction_angles = [linspace(-3*pi/4-pi/20,-pi/4+pi/20, no_of_direction_vectors-1),pi/2];
+    umax=0.1;
+elseif code_flow_flag == 2
+    %% CDC 2013 --- restricted to left half
+    slice_at_vx_vy = [0.01, 0.01];
+    initial_guess_for_xmax=[-0.9;-1;0;0];
+    no_of_direction_vectors = 10;
+    direction_angles = linspace(-pi,pi/2, no_of_direction_vectors);
+    umax=0.01;
+else
+    error('Invalid option');
+end
 
 %% Tolerances and alpha --- common to both examples
 display_string = 'off';

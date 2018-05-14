@@ -167,9 +167,9 @@ for alpha_index = 1: no_of_alphas
                                                     b_inequalities_input);
         end
         vertices_of_polytopic_underapprox = xmax+optimal_theta_i.*set_of_directions_vectors;
-        polytopic_underapprox = Polyhedron('V',[xmax,vertices_of_polytopic_underapprox]');
+        polytopic_underapprox = Polyhedron('V',[vertices_of_polytopic_underapprox]');
         minVRep(polytopic_underapprox);
-        if size(polytopic_underapprox.V,1)~=(no_of_direction_vectors+1)
+        if size(polytopic_underapprox.V,1)~=(no_of_direction_vectors)
             fprintf('\n### Convex hull ate away few points!\n No. of points: %d\n',size(polytopic_underapprox.V,1));
         end
     else
@@ -178,7 +178,7 @@ for alpha_index = 1: no_of_alphas
     end
     %% Construct the polytope
     elapsed_time_PS = toc(timerval_polytopic_underapprox);
-    fprintf('Time taken: %1.4f\n', elapsed_time_PS);
+%     fprintf('Time taken: %1.4f\n', elapsed_time_PS);
 
     optimal_theta_i_array(alpha_index,:) = optimal_theta_i;
     optimal_reachAvoid_i_array(alpha_index,:) = optimal_reachAvoid_i;
@@ -186,44 +186,80 @@ for alpha_index = 1: no_of_alphas
     polyarray_underapprox = [polyarray_underapprox,polytopic_underapprox];
     array_elapsed_time_PS(alpha_index) = elapsed_time_PS;
 end
-disp(array_elapsed_time_PS);
+% disp(array_elapsed_time_PS);
+fprintf('This completes the polytopic computation.\n\n');
 
-%% Plots
-figure(3);
-clf
-box on;
-hold on;
-plot(polytope_safe_set.slice([3,4], slice_at_vx_vy), 'alpha',1,'color', 'g')
-plot(polytope_target_set.slice([3,4], slice_at_vx_vy), 'color', 'k')
-plot(LagrangianSolution, 'color', 'y', 'LineStyle', '--')
-caxis([0 1])
-colormap_matrix =colormap('hsv');
-color_step_size = 1/(size(colormap_matrix,1)-1);
-if no_of_alphas>1
-    for alpha_index = 1:no_of_alphas
-        colormap_matrix_index = round(alpha_for_level_set_vector(alpha_index)/color_step_size)+1;
-        colorpolytope = colormap_matrix( colormap_matrix_index,:);
-        if ~polyarray_underapprox(alpha_index).isEmptySet
-            plot(projection(polyarray_underapprox(alpha_index),[1,2]),'alpha',0.7,'color',colorpolytope);
-        else
-            disp('Skipping empty polytope');
-        end
-    end
-else
-    colormap_matrix_index = round(alpha_for_level_set_vector/color_step_size)+1;
-    colorpolytope = colormap_matrix( colormap_matrix_index,:);
-    if ~polyarray_underapprox.isEmptySet
-        plot(projection(polyarray_underapprox,[1,2]),'alpha',0.7,'color',colorpolytope);
-    else
-        disp('Skipping empty polytope');
-    end
+%% CDC 2017 (Gleason, Vinod, Oishi): Load the Lagrangian-based solution
+disp('Lagrangian-based solution');
+disp('=========================');
+disp('You may obtain the codes to rerun this computation from ');
+disp('https://hscl.unm.edu/wp-content/uploads/CDC17.zip.');
+if code_flow_flag == 1
+    load('CDC2017_solution_cwh_save.mat','DsetTemp');
+    LagrangianSolution = DsetTemp.slice([3,4], slice_at_vx_vy);
+    label_cells={'Safe Set','Target Set','Lagrangian','Chance-constrained','Algorithm 1'};    
+elseif code_flow_flag == 2
+    disp('### Lagrangian-based approach fails in this case due ');
+    disp('to computational geometry issues.');
+    LagrangianSolution = Polyhedron.emptySet(2);
+    label_cells={'Safe Set','Chance-constrained','Algorithm 1'};    
 end
+
+%% CDC 2013 (Lesser, Oishi, Erwin): Load the chance-constrained-based solution
+disp('');
+disp('Chance-constrained based solution');
+disp('=================================');
+disp('You may rerun this computation via Lesser_cvx_chance_constrained.m');
+if code_flow_flag == 1
+    %% CDC 2017
+    load('Lesser_CCC_Figure5.mat'); 
+elseif code_flow_flag == 2
+    %% CDC 2013 --- restricted to left half
+    load('Lesser_CCC_Figure6.mat'); 
+end
+
+fprintf('\n\nComputation times are (Table 2)\n');
+if code_flow_flag == 1
+    figure(5);
+elseif code_flow_flag == 2
+    figure(6);
+end
+clf
+hold on;
+plot(polytope_safe_set.slice([3,4], slice_at_vx_vy), 'alpha', 1,'color', 'g')
+if code_flow_flag == 1
+    plot(polytope_target_set.slice([3,4], slice_at_vx_vy), 'color', 'k')
+    plot(LagrangianSolution, 'color', 'y', 'LineStyle', '--','alpha',0.9)
+    disp('Lagrangian');
+    disp(14.5/60);      % From CDC 2017 paper
+end
+caxis([0 1])
+colormap_matrix = colormap('copper');
+color_step_size = 1/(size(colormap_matrix,1)-1);
+colorpolytope = colormap_matrix(round((0.8-.3)/color_step_size)+1,:);
+[~,donotplot_handle]=contourf(x01,x02,Prob-.3,[.8-.3 .8-.3]);
+set(get(get(donotplot_handle,'Annotation'),'LegendInformation'),'IconDisplayStyle','off'); % Exclude line from legend 
+plot(Polyhedron('lb',-ones(2,1),'ub',ones(2,1))*0.0001+[0;0.05], 'alpha',1,'color', colorpolytope,'LineStyle','-','LineWidth',0.001);
+plot(projection(polyarray_underapprox,[1,2]),'alpha',0.7,'color','m');
 set(gca,'Fontsize',20);
 axis equal
 xlabel('$x$','interpreter','latex','Fontsize',20);
 ylabel('$y$','interpreter','latex','Fontsize',20);
 leg=legend(label_cells);
+if code_flow_flag == 2
+    set(leg,'Location','BestOutside')
+    x01 = x01(1):0.1:-0.7;
+    axis([x01(1) x01(end) x02(1) x02(end)])
+    set(gca,'YTick',x02(1:10:end))
+end
 box on;
 grid on;
-% title('Reach Avoid Sets (DP+Polytopic)');
+disp('CDC2013')
+disp(timeSpent/60);
+disp('Algorithm 1');
+disp(array_elapsed_time_PS/60);
 
+%vertex = polytopic_underapprox.V;
+%hold on
+%scatter(xmax(1),xmax(2),100,'ko','filled')
+%scatter(vertices_of_polytopic_underapprox(1,:),vertices_of_polytopic_underapprox(2,:),100,'bo','filled')
